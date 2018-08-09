@@ -1,0 +1,93 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: ovs-monitoring
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - list
+      - watch
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - nodes/status
+    verbs:
+      - patch
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: ovs-monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ovs-monitoring
+subjects:
+  - kind: ServiceAccount
+    name: ovs-monitoring
+    namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ovs-monitoring
+  namespace: kube-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ovs-monitoring
+  namespace: kube-system
+  labels:
+    app: ovs-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ovs-monitoring
+  template:
+    metadata:
+      labels:
+        app: ovs-monitoring
+    spec:
+      hostNetwork: true
+      nodeSelector:
+        node-role.kubernetes.io/master: "" 
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      serviceAccountName: ovs-monitoring  
+      containers:
+      - name: kube-prometheus-ovs
+        image: dunlin/kube-prometheus-ovs
+        volumeMounts:
+        - name: data
+          mountPath: /prometheus
+      - name: ovs-exporter
+        image: dunlin/ovs-exporter
+        volumeMounts:
+        - name: kube-config
+          mountPath: /root/.kube
+      - name: grafana
+        image: dunlin/dunlin-grafana
+      volumes:
+        - name: data
+          hostPath:
+            path: /var/lib/prometheus/data
+        - name: kube-config
+          hostPath:
+            path: /root/.kube
+            
+
