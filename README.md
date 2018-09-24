@@ -7,6 +7,7 @@ This Kubernetes deployment installs three compononent for Dunlin Plugin monitori
       3. Grafana dashboard for visualizing the collected metrics.
 
 To use this in your Kubernetes cluster type the following command in your master node:
+
       $ sudo mkdir /var/lib/prometheus/data; chmod 777 /var/lib/prometheus/data
       $ kubectl apply -f https://dunlin.io/dunlin.yaml
       
